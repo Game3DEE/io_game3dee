@@ -7,6 +7,10 @@ from bpy.types import Operator
 from mathutils import Matrix
 
 from .actionforms import import_animator_3df
+from .canopygames import import_mdl
+from .darkstone import import_o3d
+from .prism3d import import_gdt, import_pmd, import_pmg, import_psm
+from .sunstorm import import_ssm
 
 bl_info = {
     "name": "Import/Export for many 3D games",
@@ -28,24 +32,41 @@ import_exts = [
     # Chasm
 #    "3o", "car",
     # Darkstone: Evil Reigns
-#    "o3d",
+    "o3d",
     # Prism3D (Shark)
-#    "gdt", "pmd", "pmg", "psm",
+    "gdt", "pmd", "pmg", "psm",
     # Quickdraw3D
 #    "3dmf",
     # Serious Engine (v1)
 #    "ba", "bm", "bs", "mdl", "tex",
     # 
-#    "ssm",
+    "ssm",
     # Vivisector/..
-    "cmf",
+#    "cmf",
 ]
 def import_model(context, filepath, mat):
     _, ext = os.path.splitext(os.path.basename(filepath))
     
     match ext.lower():
+        case ".mdl":
+            return import_mdl(context, filepath, mat)
+
+        case ".o3d":
+            return import_o3d(context, filepath, mat)
+
+        case ".gdt":
+            return import_gdt(context, filepath, mat)
+        case ".pmd":
+            return import_pmd(context, filepath, mat)
+        case ".pmg":
+            return import_pmg(context, filepath, mat)
+        case ".psm":
+            return import_psm(context, filepath, mat)
         case ".3df":
             return import_animator_3df(context, filepath, mat)
+
+        case "ssm":
+            return import_ssm(context, filepath, mat)
 
     return {'FINISHED'}
 

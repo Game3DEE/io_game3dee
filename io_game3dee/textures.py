@@ -1,14 +1,14 @@
 import os
 import bpy
 
-from .kaitai.sunstorm_stx import SunstormStx
+from .sunstorm import import_stx
 
 # Wrapper around bpy.data.images.load to handle custom image formats
 def load_image_wrapper(path):
     name, ext = os.path.splitext(os.path.basename(path))
     match ext.lower():
         case ".stx":
-            return import_sunstorm_stx(name, path)
+            return import_stx(name, path)
         case _:
             return bpy.data.images.load(path)
 
@@ -28,20 +28,3 @@ def create_material(name, path):
                 bsdf.inputs['Base Color'], texImage.outputs['Color'])
 
     return mat
-
-# TODO: fix assumption of 24bit textures
-def import_sunstorm_stx(name, path):
-    stx = SunstormStx.from_file(path)
-    mipmap = stx.mipmaps[0]
-    pixel_count = mipmap.width * mipmap.height
-    img = bpy.data.images.new(name, mipmap.width, mipmap.height)
-    p = [0.0] * pixel_count * 4
-    for i in range(pixel_count):
-        p[i * 4 +0] = mipmap.rgb[i * 3 +0] / 255.0
-        p[i * 4 +1] = mipmap.rgb[i * 3 +1] / 255.0
-        p[i * 4 +2] = mipmap.rgb[i * 3 +2] / 255.0
-        p[i * 4 +3] = 1.0
-    img.pixels[:] = p[:]
-    img.pack()
-    img.use_fake_user = True
-    return img
