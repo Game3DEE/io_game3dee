@@ -5,7 +5,9 @@ from .kaitai.sunstorm_ssm import SunstormSsm
 from .kaitai.sunstorm_stx import SunstormStx
 from .textures import create_material
 
-# TODO: fix assumption of 24bit textures
+# TODO: improve texture reading
+#  1. read parameters (seperate stx alpha data with jpg image data)
+#  2. allow in-stx rgb data that is _not_ 24bit color
 def import_stx(name, path):
     stx = SunstormStx.from_file(path)
     mipmap = stx.mipmaps[0]
@@ -22,7 +24,7 @@ def import_stx(name, path):
     img.use_fake_user = True
     return img
 
-def import_ssmo(context, filepath, mat):
+def import_ssm(context, filepath, mat):
     # TODO: check if we can detect those pesky "NORMALS" geometry
     #       and make it easier to delete them.
     name, _ = os.path.splitext(os.path.basename(filepath))
@@ -58,7 +60,7 @@ def import_ssmo(context, filepath, mat):
         if ssm_mat.num_skins > 0:
             skin = ssm_mat.skins[0]
             texname = parsed.textures[skin.texture_index].name.removeprefix('file;')
-            material = create_material(f"{name}_{skin.name}", os.path.join(filedir, texname))
+            material = create_material(f"{name}_{skin.name}", os.path.join(filedir, texname), { ".stx": import_stx })
         obj.data.materials.append(material)
 
     # Set materials (per face)
