@@ -20,15 +20,15 @@ def import_carnivores_3df(context, filepath, mat):
     view_layer = bpy.context.view_layer
     collection = view_layer.active_layer_collection.collection
 
-    height = (parsed.len_texture / 2) / 256
+    height, image = read_texture(parsed.len_texture, parsed.texture)
 
     mverts = list(map(lambda v: [v.x, v.y, v.z], parsed.vertices))
     mfaces = []
     muvs = []
     for f in parsed.faces:
-        muvs.append([ f.u[0] / 255.0, (255.0 - f.tay) / height ])
-        muvs.append([ f.u[1] / 255.0, (255.0 - f.tby) / height ])
-        muvs.append([ f.u[2] / 255.0, (255.0 - f.tcy) / height ])
+        muvs.append([ f.u[0] / 255.0, (255.0 - f.v[0]) / height ])
+        muvs.append([ f.u[1] / 255.0, (255.0 - f.v[1]) / height ])
+        muvs.append([ f.u[2] / 255.0, (255.0 - f.v[2]) / height ])
         mfaces.append(f.indices)
 
     mesh_data = bpy.data.meshes.new(name + '_Mesh')
@@ -42,6 +42,16 @@ def import_carnivores_3df(context, filepath, mat):
     uv = obj.data.uv_layers.new(name=name + "_UV")
     for loop in obj.data.loops:
         uv.data[loop.index].uv = muvs[loop.index]
+
+    # If we have a texture, setup material
+    if image != None:
+        mat = bpy.data.materials.new(name=name + "_Material")
+        mat.use_nodes = True
+        bsdf = mat.node_tree.nodes["Principled BSDF"]
+        texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
+        texImage.image = image
+        mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
+        obj.data.materials.append(mat)
 
     return {'FINISHED'}
 
@@ -98,3 +108,32 @@ def import_animator_3df(context, filepath, mat):
         lod_num += 1
 
     return {'FINISHED'}
+
+def read_texture(texture_size, data):
+    height = int((texture_size / 2) / 256)
+    if height == 0:
+        height = 256
+
+    image = None
+    offset = 0
+    if len(data) > 0:
+        image = bpy.data.images.new('src', 256, height)
+        p = [0.0] * 256 * height * 4
+        # convert BGR5551 to RGBA
+        dest = 0
+        for pixels in range(int(texture_size / 2)):
+            w = data[offset+0] + (data[offset+1] * 256)
+            offset += 2
+            b = (w >> 0) & 31
+            g = (w >> 5) & 31
+            r = (w >> 10) & 31
+            p[dest + 0] = r / 31.0
+            p[dest + 1] = g / 31.0
+            p[dest + 2] = b / 31.0
+            p[dest + 3] = 1.0
+            dest += 4
+        image.pixels[:] = p[:]
+        image.pack()
+        image.use_fake_user = True
+
+    return height, image
