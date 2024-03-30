@@ -1,20 +1,55 @@
 import os
 import bpy
-from .kaitai.animator_3df import Animator3df
 from .textures import create_material
+from .kaitai.animator_3df import Animator3df
+from .kaitai.carnivores_3df import Carnivores3df
 
-def import_animator_3df(context, filepath, mat):
-    name, ext = os.path.splitext(os.path.basename(filepath))
-    filedir = os.path.dirname(filepath)
-
-    parsed = None
+def import_3df(context, filepath, mat):
     try:
-        parsed = Animator3df.from_file(filepath)
+        return import_animator_3df(context, filepath, mat)
     except:
         pass
 
-    if parsed is None:
-        return {'CANCELLED'}
+    return import_carnivores_3df(context, filepath, mat)
+
+def import_carnivores_3df(context, filepath, mat):
+    name, _ = os.path.splitext(os.path.basename(filepath))
+
+    parsed = Carnivores3df.from_file(filepath)
+
+    view_layer = bpy.context.view_layer
+    collection = view_layer.active_layer_collection.collection
+
+    height = (parsed.len_texture / 2) / 256
+
+    mverts = list(map(lambda v: [v.x, v.y, v.z], parsed.vertices))
+    mfaces = []
+    muvs = []
+    for f in parsed.faces:
+        muvs.append([ f.u[0] / 255.0, (255.0 - f.tay) / height ])
+        muvs.append([ f.u[1] / 255.0, (255.0 - f.tby) / height ])
+        muvs.append([ f.u[2] / 255.0, (255.0 - f.tcy) / height ])
+        mfaces.append(f.indices)
+
+    mesh_data = bpy.data.meshes.new(name + '_Mesh')
+    mesh_data.from_pydata(mverts, [], mfaces) # [] = no edges defined
+    mesh_data.update()
+    mesh_data.transform(mat)
+
+    obj = bpy.data.objects.new(name, mesh_data)
+    collection.objects.link(obj)
+
+    uv = obj.data.uv_layers.new(name=name + "_UV")
+    for loop in obj.data.loops:
+        uv.data[loop.index].uv = muvs[loop.index]
+
+    return {'FINISHED'}
+
+def import_animator_3df(context, filepath, mat):
+    name, _ = os.path.splitext(os.path.basename(filepath))
+    filedir = os.path.dirname(filepath)
+
+    parsed = Animator3df.from_file(filepath)
 
     # Create required materials
     materials = list(map(lambda tex: create_material(name + "_" + os.path.basename(tex),
