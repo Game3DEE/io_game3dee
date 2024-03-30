@@ -11,7 +11,7 @@ def load_image_wrapper(path,custom):
     return bpy.data.images.load(path)
 
 # Called with an actual path or None if unable to find correct texture
-def create_material(name, path, custom):
+def create_material(name, path, custom = {}):
     mat = bpy.data.materials.new(name=name+"_Material")
     # Only use path if it is set, and points to a loadable texture
     if path is not None and os.path.isfile(path):
