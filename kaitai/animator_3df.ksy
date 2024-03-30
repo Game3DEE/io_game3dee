@@ -1,14 +1,20 @@
 meta:
   id: animator_3df
-  file-extension: animator_3df
+  file-extension: 3df
+  application: ActionForms Animator software & games
   endian: le
   encoding: utf8
+  license: CC0
 
 seq:
   - id: magic
     contents: "Kiev"
   - id: version
     type: u4
+    valid:
+      any-of: [4, 6]
+    doc: |
+      V4 is used in Duke Nukem: Endangered Species, V6 is current Animator format.
   - id: skipped
     size: 120
   - id: num_textures
@@ -75,7 +81,11 @@ types:
       - id: c
         type: u2
       - id: flags
-        type: u2
+        type:
+          switch-on: _root.version
+          cases:
+            4: u2
+            6: u4
       - id: tax
         type: f4
       - id: tbx

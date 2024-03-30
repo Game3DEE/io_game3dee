@@ -17,6 +17,8 @@ class Animator3df(KaitaiStruct):
         if not self.magic == b"\x4B\x69\x65\x76":
             raise kaitaistruct.ValidationNotEqualError(b"\x4B\x69\x65\x76", self.magic, self._io, u"/seq/0")
         self.version = self._io.read_u4le()
+        if not  ((self.version == 4) or (self.version == 6)) :
+            raise kaitaistruct.ValidationNotAnyOfError(self.version, self._io, u"/seq/1")
         self.skipped = self._io.read_bytes(120)
         self.num_textures = self._io.read_u4le()
         self.textures = []
@@ -85,7 +87,11 @@ class Animator3df(KaitaiStruct):
             self.a = self._io.read_u2le()
             self.b = self._io.read_u2le()
             self.c = self._io.read_u2le()
-            self.flags = self._io.read_u2le()
+            _on = self._root.version
+            if _on == 4:
+                self.flags = self._io.read_u2le()
+            elif _on == 6:
+                self.flags = self._io.read_u4le()
             self.tax = self._io.read_f4le()
             self.tbx = self._io.read_f4le()
             self.tcx = self._io.read_f4le()
