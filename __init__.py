@@ -11,7 +11,7 @@ from bpy.props import StringProperty, FloatProperty
 from bpy.types import Operator
 from mathutils import Matrix
 
-from .actionforms import import_3df
+from .actionforms import import_3df, import_ubfc
 from .canopygames import import_mdl
 from .darkstone import import_o3d
 from .prism3d import import_gdt, import_pmd, import_pmg, import_psm
@@ -50,8 +50,9 @@ import_exts = [
     #    "ba", "bm", "bs", "mdl", "tex",
     #
     "ssm",
-    # Vivisector/..
-    #    "cmf",
+    # Vivisector/Cryostasis
+    "cmf",
+    "csf",
 ]
 
 
@@ -73,8 +74,11 @@ def import_model(context, filepath, mat):
             return import_pmg(context, filepath, mat)
         case ".psm":
             return import_psm(context, filepath, mat)
+
         case ".3df":
             return import_3df(context, filepath, mat)
+        case ".cmf" | ".csf":
+            return import_ubfc(context, filepath, mat)
 
         case ".ssm":
             return import_ssm(context, filepath, mat)

@@ -3,6 +3,54 @@ import bpy
 from .textures import create_material
 from .kaitai.animator_3df import Animator3df
 from .kaitai.carnivores_3df import Carnivores3df
+from .kaitai.atmosfear_ubfc import AtmosfearUbfc
+
+def import_ubfc(context, filepath, mat):
+    parsed = AtmosfearUbfc.from_file(filepath)
+
+    view_layer = bpy.context.view_layer
+    collection = view_layer.active_layer_collection.collection
+
+    verts = []
+    faces = []
+    obj_count = 0
+    for block in parsed.blocks:
+        match block.id:
+            case AtmosfearUbfc.BlockId.object_start:
+                if len(verts) > 0:
+                    obj_count += 1
+                    name = "Object%d" % obj_count
+                    mesh_data = bpy.data.meshes.new(name + '_Mesh')
+                    mesh_data.from_pydata(verts, [], faces) # [] = no edges defined
+                    mesh_data.update()
+                    mesh_data.transform(mat)
+
+                    obj = bpy.data.objects.new(name, mesh_data)
+                    collection.objects.link(obj)
+
+                    verts = []
+                    faces = []
+            case AtmosfearUbfc.BlockId.vertices:
+                verts = list(map(lambda v: [v.x, v.y, v.z], block.data.vertices))
+            case AtmosfearUbfc.BlockId.faces:
+                for face in block.data.faces:
+                    if face.d != face.c: # is this face a quad?
+                        faces.append([ face.a, face.b, face.c, face.d ])
+                    else:
+                        faces.append([ face.a, face.b, face.c ])
+
+    if len(verts) > 0:
+        obj_count += 1
+        name = "Object%d" % obj_count
+        mesh_data = bpy.data.meshes.new(name + '_Mesh')
+        mesh_data.from_pydata(verts, [], faces) # [] = no edges defined
+        mesh_data.update()
+        mesh_data.transform(mat)
+
+        obj = bpy.data.objects.new(name, mesh_data)
+        collection.objects.link(obj)
+
+    return {'FINISHED'}
 
 def import_3df(context, filepath, mat):
     try:
