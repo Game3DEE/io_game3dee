@@ -52,7 +52,7 @@ def import_animator_3df(context, filepath, mat):
         # Set materials (per face)
         face_index = 0
         for materialIdx in range(parsed.num_textures):
-            for i in range(lod.face_count_per_texture[materialIdx]):
+            for i in range(lod.face_by_texture_counts[materialIdx]):
                 obj.data.polygons[face_index].material_index = materialIdx
                 face_index += 1
 
