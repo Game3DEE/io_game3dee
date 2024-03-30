@@ -6,6 +6,12 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 class Animator3df(KaitaiStruct):
+    """This version of 3DF is written out by the ActionForms Animator program
+    and used directly in the unreleased game Duke Nukem: Endangered Species.
+    Version 4 is used in the last released binary of Animator 7, but the
+    publicly available source for Animator only saves Version 6 of the format.
+    A single V6 file is found in the ActionForms game called Vivisector.
+    """
     def __init__(self, _io, _parent=None, _root=None):
         self._io = _io
         self._parent = _parent
@@ -92,6 +98,9 @@ class Animator3df(KaitaiStruct):
                 self.flags = self._io.read_u2le()
             elif _on == 6:
                 self.flags = self._io.read_u4le()
+            if self._root.version == 6:
+                self._unnamed4 = self._io.read_u2le()
+
             self.tax = self._io.read_f4le()
             self.tbx = self._io.read_f4le()
             self.tcx = self._io.read_f4le()

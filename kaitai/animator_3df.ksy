@@ -1,10 +1,17 @@
 meta:
   id: animator_3df
+  title: ActionForms Animator model format
   file-extension: 3df
-  application: ActionForms Animator software & games
   endian: le
   encoding: utf8
   license: CC0
+
+doc: |
+  This version of 3DF is written out by the ActionForms Animator program
+  and used directly in the unreleased game Duke Nukem: Endangered Species.
+  Version 4 is used in the last released binary of Animator 7, but the
+  publicly available source for Animator only saves Version 6 of the format.
+  A single V6 file is found in the ActionForms game called Vivisector.
 
 seq:
   - id: magic
@@ -13,8 +20,6 @@ seq:
     type: u4
     valid:
       any-of: [4, 6]
-    doc: |
-      V4 is used in Duke Nukem: Endangered Species, V6 is current Animator format.
   - id: skipped
     size: 120
   - id: num_textures
@@ -86,6 +91,9 @@ types:
           cases:
             4: u2
             6: u4
+      - type: u2
+        if: _root.version == 6
+        doc: 4-byte alignment for next float fields
       - id: tax
         type: f4
       - id: tbx
