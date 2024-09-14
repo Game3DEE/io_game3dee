@@ -1,9 +1,24 @@
 import os
 import bpy
-from .textures import create_material
+from .textures import create_material, create_material_from_image
 from .kaitai.animator_3df import Animator3df
 from .kaitai.carnivores_3df import Carnivores3df
 from .kaitai.atmosfear_ubfc import AtmosfearUbfc
+
+"""
+Carnivores face flags:
+#define sfDoubleSide         1
+#define sfDarkBack           2
+#define sfOpacity            4
+#define sfTransparent        8
+#define sfMortal        0x0010
+#define sfPhong         0x0030
+#define sfEnvMap        0x0050
+
+#define sfNeedVC        0x0080
+#define sfDark          0x8000
+
+"""
 
 def import_ubfc(context, filepath, mat):
     parsed = AtmosfearUbfc.from_file(filepath)
@@ -33,11 +48,16 @@ def import_ubfc(context, filepath, mat):
             case AtmosfearUbfc.BlockId.vertices:
                 verts = list(map(lambda v: [v.x, v.y, v.z], block.data.vertices))
             case AtmosfearUbfc.BlockId.faces:
+                tri_count = 0
+                quad_count = 0
                 for face in block.data.faces:
+                    faces.append([ face.c, face.b, face.a ])
                     if face.d != face.c: # is this face a quad?
-                        faces.append([ face.a, face.b, face.c, face.d ])
+                        faces.append([ face.a, face.d, face.c ])
+                        quad_count += 1
                     else:
-                        faces.append([ face.a, face.b, face.c ])
+                        tri_count += 1
+                print("Tris:%d, Quads:%d" % (tri_count, quad_count))
 
     if len(verts) > 0:
         obj_count += 1
@@ -68,7 +88,12 @@ def import_carnivores_3df(context, filepath, mat):
     view_layer = bpy.context.view_layer
     collection = view_layer.active_layer_collection.collection
 
-    height, image = read_texture(parsed.len_texture, parsed.texture)
+    create_alpha = False
+    for f in parsed.faces:
+        if f.flags & 4 == 4:
+            create_alpha = True
+
+    height, image = image_from_data(parsed.len_texture, parsed.texture, create_alpha)
 
     mverts = list(map(lambda v: [v.x, v.y, v.z], parsed.vertices))
     mfaces = []
@@ -92,14 +117,8 @@ def import_carnivores_3df(context, filepath, mat):
         uv.data[loop.index].uv = muvs[loop.index]
 
     # If we have a texture, setup material
-    if image != None:
-        mat = bpy.data.materials.new(name=name + "_Material")
-        mat.use_nodes = True
-        bsdf = mat.node_tree.nodes["Principled BSDF"]
-        texImage = mat.node_tree.nodes.new('ShaderNodeTexImage')
-        texImage.image = image
-        mat.node_tree.links.new(bsdf.inputs['Base Color'], texImage.outputs['Color'])
-        obj.data.materials.append(mat)
+    mat = create_material_from_image(name, image)
+    obj.data.materials.append(mat)
 
     return {'FINISHED'}
 
@@ -157,7 +176,7 @@ def import_animator_3df(context, filepath, mat):
 
     return {'FINISHED'}
 
-def read_texture(texture_size, data):
+def image_from_data(texture_size, data, create_alpha = False):
     height = int((texture_size / 2) / 256)
     if height == 0:
         height = 256
@@ -175,10 +194,13 @@ def read_texture(texture_size, data):
             b = (w >> 0) & 31
             g = (w >> 5) & 31
             r = (w >> 10) & 31
+            a = 1.0
+            if create_alpha:
+                a = 0.0 if w == 0 else 1.0
             p[dest + 0] = r / 31.0
             p[dest + 1] = g / 31.0
             p[dest + 2] = b / 31.0
-            p[dest + 3] = 1.0
+            p[dest + 3] = a
             dest += 4
         image.pixels[:] = p[:]
         image.pack()
